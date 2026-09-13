@@ -38,7 +38,7 @@ except ImportError:  # Windows and slim builds ship without it
     pass
 
 from agents import RunConfig, Runner, SQLiteSession
-from agents.items import RunItem
+from agents.items import ItemHelpers, RunItem
 from opentelemetry import trace
 
 from agent import db
@@ -54,11 +54,23 @@ _tracer = trace.get_tracer("cartwheel.cli")
 
 
 def _print_tool_calls(new_items: list[RunItem]) -> None:
-    """Print each tool call and its result from one run's new items.
+    """Print each tool call, its result, and any plain-text message the model
+    emitted along the way, in the order they actually happened.
 
-    `Runner.run` always returns the tool calls and their outputs on
-    `result.new_items`, independent of whether tracing is configured, so
-    this is accurate with or without --trace.
+    `Runner.run` always returns every new item -- tool calls, their outputs,
+    and message text -- on `result.new_items`, independent of whether tracing
+    is configured, so this is accurate with or without --trace. Printing the
+    intermediate message items matters here specifically: the system prompt's
+    Tool guidance tells the model to explain its reasoning in plain text
+    before every tool call, and that explanation is a `message_output_item`,
+    not part of the final answer. The earlier version of this function only
+    looked at tool_call_item/tool_call_output_item, so it silently dropped
+    that reasoning text -- this now shows it (labeled [message]) so a
+    fresh --debug run can actually confirm whether the model is following
+    that instruction, not just whether tools were called correctly. The
+    final item is still the same text `chat()` prints as `agent> ...`
+    afterward; showing it here too is intentional, not a bug, since it keeps
+    the full in-order transcript honest.
     """
     outputs = {
         item.call_id: item.output
@@ -66,7 +78,11 @@ def _print_tool_calls(new_items: list[RunItem]) -> None:
         if item.type == "tool_call_output_item" and item.call_id is not None
     }
     for item in new_items:
-        if item.type == "tool_call_item":
+        if item.type == "message_output_item":
+            text = ItemHelpers.text_message_output(item)
+            if text.strip():
+                print(f"  [message] {text}")
+        elif item.type == "tool_call_item":
             raw = item.raw_item
             args = (
                 raw.get("arguments")

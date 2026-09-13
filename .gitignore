@@ -18,3 +18,9 @@ __pycache__/
 .venv/
 .pytest_cache/
 scenarios/demo_pilot_gt.json
+
+# VS Code
+.vscode/
+
+# Local HW1 tutorial working note (not a deliverable)
+HW1-PROGRESS.md

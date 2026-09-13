@@ -232,6 +232,19 @@ def set_order_status(conn: sqlite3.Connection, order_id: int, status: str) -> No
     conn.commit()
 
 
+def list_refunds_for_order(conn: sqlite3.Connection, order_id: int) -> list[sqlite3.Row]:
+    """Every refund record filed against an order, newest first.
+
+    Student-added helper (not one of the five HW1 holes): supports
+    check_return_eligibility's sibling tool, list_refunds, which fills a gap
+    found in Part B -- get_order never reports whether a refund has already
+    been requested, so an agent had no way to see a pending/queued refund.
+    """
+    return conn.execute(
+        "SELECT * FROM refunds WHERE order_id = ? ORDER BY id DESC", (order_id,)
+    ).fetchall()
+
+
 def insert_refund(
     conn: sqlite3.Connection,
     *,

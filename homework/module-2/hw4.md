@@ -7,6 +7,7 @@ Homework 4 asks you to read Cartwheel traces, find the failures, and organize th
 Homework 4 uses the traces from Homework 3. If you did not complete Homework 3, apply the reference trace bundle:
 
 ```bash
+git lfs pull
 git apply homework/module-2/hw3-reference.patch
 ```
 
